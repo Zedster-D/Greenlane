@@ -9,7 +9,7 @@ import {
   DEMO_KPI, DEMO_MONTHLY, DEMO_MODES, DEMO_ROUTES, DEMO_NETWORK,
   DEMO_SHIPMENTS, DEMO_SUPPLIERS, DEMO_FACTORS, DEMO_FORECAST,
   DEMO_SCENARIO, DEMO_OPTIMIZER, DEMO_DISRUPTION, DEMO_CHAT,
-  DEMO_REPORT, DEMO_SETTINGS, DEMO_SCENARIOS_LIST
+  DEMO_REPORT, DEMO_SETTINGS, DEMO_SCENARIOS_LIST, calculateDynamicScenario
 } from './demoData';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -319,7 +319,7 @@ export const api = {
     fetchWithFallback(`${API_BASE}/scenarios`, DEMO_SCENARIOS_LIST),
 
   runScenario: (payload: { name?: string; mode_overrides?: Record<string, string>; consolidation_factor?: number; carbon_price?: number; dataset?: string }) => 
-    fetchWithFallback<ScenarioResult>(`${API_BASE}/scenarios/run`, DEMO_SCENARIO, {
+    fetchWithFallback<ScenarioResult>(`${API_BASE}/scenarios/run`, calculateDynamicScenario(payload), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

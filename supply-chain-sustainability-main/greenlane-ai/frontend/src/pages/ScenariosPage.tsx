@@ -36,17 +36,22 @@ export const ScenariosPage: React.FC = () => {
     handleRunSimulation();
   }, [dataset]);
 
-  const handleRunSimulation = async (customOverrides?: Record<string, string>, customConsolidation?: number) => {
+  const handleRunSimulation = async (
+    customOverrides?: Record<string, string>,
+    customConsolidation?: number,
+    customCarbonPrice?: number
+  ) => {
     setLoading(true);
     try {
       const overrides = customOverrides || { [modeFrom]: modeTo };
       const factor = customConsolidation !== undefined ? customConsolidation : consolidation;
+      const cPrice = customCarbonPrice !== undefined ? customCarbonPrice : carbonPrice;
 
       const res = await api.runScenario({
-        name: `Simulation: ${modeFrom.toUpperCase()} ➔ ${modeTo.toUpperCase()}`,
+        name: `Simulation: ${Object.keys(overrides)[0]?.toUpperCase() || 'MODE'} ➔ ${Object.values(overrides)[0]?.toUpperCase() || 'MODE'}`,
         mode_overrides: overrides,
         consolidation_factor: factor,
-        carbon_price: carbonPrice,
+        carbon_price: cPrice,
         dataset,
       });
       setResult(res);
@@ -59,7 +64,7 @@ export const ScenariosPage: React.FC = () => {
 
   const applyPreset = (preset: any) => {
     try {
-      const overrides = JSON.parse(preset.mode_overrides);
+      const overrides = typeof preset.mode_overrides === 'string' ? JSON.parse(preset.mode_overrides) : preset.mode_overrides;
       const keys = Object.keys(overrides);
       if (keys.length > 0) {
         setModeFrom(keys[0]);
@@ -67,7 +72,7 @@ export const ScenariosPage: React.FC = () => {
       }
       setConsolidation(preset.consolidation_factor);
       setCarbonPrice(preset.carbon_price);
-      handleRunSimulation(overrides, preset.consolidation_factor);
+      handleRunSimulation(overrides, preset.consolidation_factor, preset.carbon_price);
     } catch (e) {
       console.error(e);
     }
@@ -135,7 +140,11 @@ export const ScenariosPage: React.FC = () => {
                 <span className="text-[10px] text-slate-400">From Mode:</span>
                 <select
                   value={modeFrom}
-                  onChange={(e) => setModeFrom(e.target.value)}
+                  onChange={(e) => {
+                    const newFrom = e.target.value;
+                    setModeFrom(newFrom);
+                    handleRunSimulation({ [newFrom]: modeTo }, consolidation, carbonPrice);
+                  }}
                   className="w-full mt-1 bg-dark-850 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:outline-none focus:border-brand-500 capitalize font-mono"
                 >
                   <option value="air">Air Freight</option>
@@ -148,7 +157,11 @@ export const ScenariosPage: React.FC = () => {
                 <span className="text-[10px] text-slate-400">To Mode:</span>
                 <select
                   value={modeTo}
-                  onChange={(e) => setModeTo(e.target.value)}
+                  onChange={(e) => {
+                    const newTo = e.target.value;
+                    setModeTo(newTo);
+                    handleRunSimulation({ [modeFrom]: newTo }, consolidation, carbonPrice);
+                  }}
                   className="w-full mt-1 bg-dark-850 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:outline-none focus:border-brand-500 capitalize font-mono"
                 >
                   <option value="sea">Ocean (Slow/Fast)</option>
@@ -174,7 +187,11 @@ export const ScenariosPage: React.FC = () => {
               max="1.2"
               step="0.05"
               value={consolidation}
-              onChange={(e) => setConsolidation(parseFloat(e.target.value))}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setConsolidation(val);
+                handleRunSimulation({ [modeFrom]: modeTo }, val, carbonPrice);
+              }}
               className="w-full h-2 bg-dark-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
             />
             <span className="text-[10px] text-slate-500 block">
@@ -194,7 +211,11 @@ export const ScenariosPage: React.FC = () => {
               max="200"
               step="10"
               value={carbonPrice}
-              onChange={(e) => setCarbonPrice(parseFloat(e.target.value))}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setCarbonPrice(val);
+                handleRunSimulation({ [modeFrom]: modeTo }, consolidation, val);
+              }}
               className="w-full h-2 bg-dark-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
           </div>

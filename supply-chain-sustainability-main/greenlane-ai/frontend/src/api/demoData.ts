@@ -136,16 +136,6 @@ export const DEMO_FORECAST = {
   note: "Forecast based on 12-month historical data using exponential smoothing."
 };
 
-export const DEMO_SCENARIO: ScenarioResult = {
-  name: "Green Mode Shift",
-  baseline: { co2e_kg: 284750, cost: 425000, time_hours: 1820, carbon_cost: 14237 },
-  scenario: { co2e_kg: 198500, cost: 448000, time_hours: 2150, carbon_cost: 9925 },
-  delta: { co2e_kg: -86250, co2e_pct: -30.3, cost: 23000, cost_pct: 5.4, time_hours: 330, time_pct: 18.1 },
-  consolidation_factor: 1.0,
-  carbon_price: 50,
-  timestamp: new Date().toISOString()
-};
-
 export const DEMO_OPTIMIZER: OptimizerResponse = {
   baseline: { co2e_kg: 284750, cost: 425000, time_hours: 1820 },
   feasible_count: 8,
@@ -190,6 +180,156 @@ export const DEMO_REPORT = {
   ]
 };
 
+export function calculateDynamicScenario(payload: {
+  name?: string;
+  mode_overrides?: Record<string, string>;
+  consolidation_factor?: number;
+  carbon_price?: number;
+}): ScenarioResult {
+  const consolidation = payload.consolidation_factor ?? 0.90;
+  const carbonPrice = payload.carbon_price ?? 50.0;
+  const overrides = payload.mode_overrides || {};
+
+  // Realistic baseline figures for demo fleet (approx 1,250 shipments, 2,800 tonnes)
+  const baseCO2 = 284750;
+  const baseCost = 425000;
+  const baseTime = 1820;
+
+  // Breakdown of baseline emissions & costs by mode
+  // Air: 52% of CO2, 45% of cost, 5% of time
+  // Road: 30% of CO2, 35% of cost, 25% of time
+  // Sea: 15% of CO2, 15% of cost, 60% of time
+  // Rail: 3% of CO2, 5% of cost, 10% of time
+  let co2Multiplier = 1.0;
+  let costMultiplier = 1.0;
+  let timeMultiplier = 1.0;
+
+  for (const [fromMode, toMode] of Object.entries(overrides)) {
+    const from = fromMode.toLowerCase();
+    const to = toMode.toLowerCase();
+
+    if (from === 'air' && to === 'sea') {
+      co2Multiplier -= 0.44; // Drastic carbon drop
+      costMultiplier -= 0.32; // Cheaper
+      timeMultiplier += 0.45; // Longer lead time
+    } else if (from === 'air' && to === 'rail') {
+      co2Multiplier -= 0.42;
+      costMultiplier -= 0.28;
+      timeMultiplier += 0.25;
+    } else if (from === 'air' && to === 'road') {
+      co2Multiplier -= 0.35;
+      costMultiplier -= 0.20;
+      timeMultiplier += 0.15;
+    } else if (from === 'road' && to === 'rail') {
+      co2Multiplier -= 0.19;
+      costMultiplier -= 0.08;
+      timeMultiplier += 0.05;
+    } else if (from === 'road' && to === 'sea') {
+      co2Multiplier -= 0.24;
+      costMultiplier -= 0.15;
+      timeMultiplier += 0.30;
+    } else if (from === 'sea' && to === 'air') {
+      co2Multiplier += 0.50;
+      costMultiplier += 0.40;
+      timeMultiplier -= 0.40;
+    } else if (from === 'road' && to === 'air') {
+      co2Multiplier += 0.45;
+      costMultiplier += 0.35;
+      timeMultiplier -= 0.20;
+    }
+  }
+
+  // Apply consolidation factor (e.g. 0.80 = 20% fewer trips)
+  const finalCO2 = Math.max(10000, Math.round(baseCO2 * co2Multiplier * consolidation));
+  const finalCost = Math.max(20000, Math.round(baseCost * costMultiplier * consolidation));
+  const finalTime = Math.max(500, Math.round(baseTime * timeMultiplier));
+
+  const baseCarbonCost = Math.round((baseCO2 / 1000) * carbonPrice);
+  const scenarioCarbonCost = Math.round((finalCO2 / 1000) * carbonPrice);
+
+  const deltaCO2 = finalCO2 - baseCO2;
+  const deltaCost = finalCost - baseCost;
+  const deltaTime = finalTime - baseTime;
+
+  return {
+    name: payload.name || "Custom Scenario",
+    baseline: {
+      co2e_kg: baseCO2,
+      cost: baseCost,
+      time_hours: baseTime,
+      carbon_cost: baseCarbonCost,
+    },
+    scenario: {
+      co2e_kg: finalCO2,
+      cost: finalCost,
+      time_hours: finalTime,
+      carbon_cost: scenarioCarbonCost,
+    },
+    delta: {
+      co2e_kg: deltaCO2,
+      co2e_pct: parseFloat(((deltaCO2 / baseCO2) * 100).toFixed(1)),
+      cost: deltaCost,
+      cost_pct: parseFloat(((deltaCost / baseCost) * 100).toFixed(1)),
+      time_hours: deltaTime,
+      time_pct: parseFloat(((deltaTime / baseTime) * 100).toFixed(1)),
+    },
+    consolidation_factor: consolidation,
+    carbon_price: carbonPrice,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export const DEMO_SCENARIOS_LIST = [
+  {
+    id: 1,
+    name: "Air-to-Sea Mode Shift (Fast Steaming)",
+    description: "Shift non-urgent express air freight to scheduled ocean carrier routes. Drastically cuts carbon at ~65% cost reduction.",
+    mode_overrides: JSON.stringify({ air: "sea" }),
+    consolidation_factor: 0.90,
+    carbon_price: 60.0,
+    baseline_co2: 284750.0,
+    scenario_co2: 122442.0,
+    baseline_cost: 425000.0,
+    scenario_cost: 260100.0,
+    co2_change_pct: -57.0,
+    cost_change_pct: -38.8,
+  },
+  {
+    id: 2,
+    name: "Western DFC Rail Electrification",
+    description: "Migrate container haulage from diesel trucking to electrified Dedicated Freight Corridor (DFC) rail.",
+    mode_overrides: JSON.stringify({ road: "rail" }),
+    consolidation_factor: 0.95,
+    carbon_price: 50.0,
+    baseline_co2: 284750.0,
+    scenario_co2: 219115.0,
+    baseline_cost: 425000.0,
+    scenario_cost: 371450.0,
+    co2_change_pct: -23.1,
+    cost_change_pct: -12.6,
+  },
+  {
+    id: 3,
+    name: "Load Consolidation & Route Bundling",
+    description: "Consolidate LCL shipments into FCL container bundling via central freight hub.",
+    mode_overrides: JSON.stringify({}),
+    consolidation_factor: 0.80,
+    carbon_price: 50.0,
+    baseline_co2: 284750.0,
+    scenario_co2: 227800.0,
+    baseline_cost: 425000.0,
+    scenario_cost: 340000.0,
+    co2_change_pct: -20.0,
+    cost_change_pct: -20.0,
+  }
+];
+
+export const DEMO_SCENARIO: ScenarioResult = calculateDynamicScenario({
+  mode_overrides: { air: "sea" },
+  consolidation_factor: 0.90,
+  carbon_price: 50.0,
+});
+
 export const DEMO_CHAT: ChatResponse = {
   reply: "Based on the current data, your highest-emitting route is **New Delhi → London** via Air freight, contributing 19.9% of total emissions. Switching this route to Sea freight could reduce emissions by approximately 85%, though transit time would increase from ~8 hours to ~25 days. A balanced approach would be to use Air for urgent shipments only and route the rest via Sea/Rail combination.",
   tool_calls: [],
@@ -207,5 +347,3 @@ export const DEMO_SETTINGS = {
   active_dataset: "demo",
   demo_mode: true
 };
-
-export const DEMO_SCENARIOS_LIST = [DEMO_SCENARIO];

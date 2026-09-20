@@ -92,10 +92,11 @@ export const NetworkPage: React.FC = () => {
               scrollWheelZoom={true}
               style={{ height: '100%', width: '100%' }}
             >
-              {/* Dark CartoDB Map Tiles */}
+              {/* Dark Map Tiles (High Performance & Clean — Zero API Key Required) */}
               <TileLayer
-                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                attribution='&copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={16}
               />
 
               {/* Draw Route Polylines */}

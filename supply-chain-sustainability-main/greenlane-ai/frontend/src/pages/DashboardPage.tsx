@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api, KPISummary, MonthlyEmission, ModeBreakdown, RouteSummary, ScenarioResult } from '../api/client';
+import { formatCurrency, formatCarbonPrice } from '../utils/currency';
 import { MetricCard } from '../components/common/MetricCard';
 import { QualityBadge } from '../components/common/QualityBadge';
 import {
@@ -158,9 +159,9 @@ export const DashboardPage: React.FC = () => {
           quality="Direct Measurement"
         />
         <MetricCard
-          title="Shadow Carbon Cost (@ €50/t)"
-          value={`€${kpis.shadow_carbon_cost.toLocaleString()}`}
-          subtitle="EU ETS shadow price impact"
+          title={`Shadow Carbon Cost (@ ${formatCarbonPrice(50, currency)})`}
+          value={formatCurrency(kpis.shadow_carbon_cost, currency)}
+          subtitle="Corporate ETS shadow price liability"
           icon={DollarSign}
           accentColor="amber"
         />
@@ -362,13 +363,13 @@ export const DashboardPage: React.FC = () => {
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-400">Logistics Cost Savings:</span>
                   <span className="font-mono font-bold text-cyan-400">
-                    {quickSimResult.delta.cost_pct}% (€{Math.abs(quickSimResult.delta.cost).toLocaleString()})
+                    {quickSimResult.delta.cost_pct}% ({formatCurrency(Math.abs(quickSimResult.delta.cost), currency)})
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-400">Shadow Carbon Cost Savings:</span>
                   <span className="font-mono text-slate-200">
-                    €{(Math.abs(quickSimResult.delta.co2e_kg) * 0.05).toFixed(2)}
+                    {formatCurrency(Math.abs(quickSimResult.delta.co2e_kg) * 0.05, currency, { decimals: 2 })}
                   </span>
                 </div>
               </div>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../api/client';
+import { formatCurrency } from '../utils/currency';
 import { FileText, Printer, Download, CheckCircle2, ShieldCheck, ArrowRight } from 'lucide-react';
 
 export const ReportsPage: React.FC = () => {
-  const { dataset } = useApp();
+  const { dataset, currency } = useApp();
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -90,7 +91,7 @@ export const ReportsPage: React.FC = () => {
             <div className="p-3 rounded-lg bg-dark-850 border border-slate-800">
               <span className="text-[10px] text-slate-400 uppercase">Shadow Tax Liability</span>
               <div className="text-lg font-bold font-mono text-amber-400 mt-0.5">
-                €{report.executive_summary.shadow_carbon_cost_eur.toLocaleString()}
+                {formatCurrency(report.executive_summary.shadow_carbon_cost_eur, currency)}
               </div>
             </div>
           </div>

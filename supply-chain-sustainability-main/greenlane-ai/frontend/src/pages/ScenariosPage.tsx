@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api, ScenarioResult } from '../api/client';
+import { formatCurrency, formatCarbonPrice, getCurrencySymbol } from '../utils/currency';
 import {
   Sliders,
   Sparkles,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export const ScenariosPage: React.FC = () => {
-  const { dataset } = useApp();
+  const { dataset, currency } = useApp();
   const [savedScenarios, setSavedScenarios] = useState<any[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string>('air_to_sea');
   
@@ -185,7 +186,7 @@ export const ScenariosPage: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-slate-300">Shadow Carbon Price:</span>
-              <span className="font-mono text-amber-400 font-bold">€{carbonPrice}/t CO₂e</span>
+              <span className="font-mono text-amber-400 font-bold">{formatCarbonPrice(carbonPrice, currency)}</span>
             </div>
             <input
               type="range"
@@ -228,7 +229,7 @@ export const ScenariosPage: React.FC = () => {
                   {result.delta.cost_pct}%
                 </div>
                 <span className="text-xs text-slate-300 font-mono">
-                  {result.delta.cost > 0 ? '+' : ''}€{result.delta.cost.toLocaleString()}
+                  {formatCurrency(result.delta.cost, currency, { showSign: true })}
                 </span>
               </div>
 
@@ -267,15 +268,15 @@ export const ScenariosPage: React.FC = () => {
                       <td className="py-3 px-3 text-emerald-400 font-bold">{result.delta.co2e_pct}%</td>
                     </tr>
                     <tr>
-                      <td className="py-3 px-3 font-sans font-medium text-slate-200">Freight Transport Spend (€)</td>
-                      <td className="py-3 px-3 text-slate-400">€{result.baseline.cost.toLocaleString()}</td>
-                      <td className="py-3 px-3 text-cyan-400 font-bold">€{result.scenario.cost.toLocaleString()}</td>
+                      <td className="py-3 px-3 font-sans font-medium text-slate-200">Freight Transport Spend ({getCurrencySymbol(currency)})</td>
+                      <td className="py-3 px-3 text-slate-400">{formatCurrency(result.baseline.cost, currency)}</td>
+                      <td className="py-3 px-3 text-cyan-400 font-bold">{formatCurrency(result.scenario.cost, currency)}</td>
                       <td className="py-3 px-3 text-cyan-400 font-bold">{result.delta.cost_pct}%</td>
                     </tr>
                     <tr>
-                      <td className="py-3 px-3 font-sans font-medium text-slate-200">Shadow Carbon Tax Liability (@ €{carbonPrice}/t)</td>
-                      <td className="py-3 px-3 text-slate-400">€{result.baseline.carbon_cost.toLocaleString()}</td>
-                      <td className="py-3 px-3 text-white font-bold">€{result.scenario.carbon_cost.toLocaleString()}</td>
+                      <td className="py-3 px-3 font-sans font-medium text-slate-200">Shadow Carbon Tax Liability (@ {formatCarbonPrice(carbonPrice, currency)})</td>
+                      <td className="py-3 px-3 text-slate-400">{formatCurrency(result.baseline.carbon_cost, currency)}</td>
+                      <td className="py-3 px-3 text-white font-bold">{formatCurrency(result.scenario.carbon_cost, currency)}</td>
                       <td className="py-3 px-3 text-emerald-400 font-bold">{result.delta.co2e_pct}%</td>
                     </tr>
                     <tr>

@@ -24,8 +24,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [dataset, setDatasetState] = useState<string>('demo');
-  const [currency, setCurrency] = useState<string>('EUR');
+  const [dataset, setDatasetState] = useState<string>(() => localStorage.getItem('greenlane_dataset') || 'demo');
+  const [currency, setCurrencyState] = useState<string>(() => localStorage.getItem('greenlane_currency') || 'EUR');
   const [carbonPrice, setCarbonPrice] = useState<number>(50.0);
   const [kpis, setKPIs] = useState<KPISummary | null>(null);
   const [loadingKPIs, setLoadingKPIs] = useState<boolean>(true);
@@ -39,7 +39,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setDataset = (newDataset: string) => {
     setDatasetState(newDataset);
+    localStorage.setItem('greenlane_dataset', newDataset);
     showToast(`Switched active dataset to ${newDataset === 'demo' ? 'VastraGlobal Exports (Demo)' : 'Paris Logistics (Original CSV)'}`);
+  };
+
+  const setCurrency = (newCurrency: string) => {
+    setCurrencyState(newCurrency);
+    localStorage.setItem('greenlane_currency', newCurrency);
+    const symbols: Record<string, string> = { EUR: '€ EUR', INR: '₹ INR', USD: '$ USD', GBP: '£ GBP' };
+    showToast(`Reporting currency set to ${symbols[newCurrency] || newCurrency}`);
   };
 
   const refreshKPIs = () => {

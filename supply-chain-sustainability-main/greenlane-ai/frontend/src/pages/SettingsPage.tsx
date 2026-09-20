@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api, EmissionFactorItem } from '../api/client';
+import { formatCarbonPrice } from '../utils/currency';
 import { Settings, Save, ShieldCheck, Database, RefreshCw } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -72,7 +73,7 @@ export const SettingsPage: React.FC = () => {
         <div className="space-y-2">
           <div className="flex justify-between text-xs">
             <span className="text-slate-300">Shadow Carbon Tax Rate:</span>
-            <span className="font-mono text-emerald-400 font-bold">€{carbonPrice} / Tonne CO₂e</span>
+            <span className="font-mono text-emerald-400 font-bold">{formatCarbonPrice(carbonPrice, currency)}</span>
           </div>
           <input
             type="range"

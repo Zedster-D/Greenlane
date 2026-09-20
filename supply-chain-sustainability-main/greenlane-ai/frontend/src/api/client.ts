@@ -1,6 +1,16 @@
 /**
  * GreenLane AI — Typed API Client
+ * 
+ * Falls back to built-in demo data when the backend API is unavailable
+ * (e.g. static deployment on Vercel without a backend).
  */
+
+import {
+  DEMO_KPI, DEMO_MONTHLY, DEMO_MODES, DEMO_ROUTES, DEMO_NETWORK,
+  DEMO_SHIPMENTS, DEMO_SUPPLIERS, DEMO_FACTORS, DEMO_FORECAST,
+  DEMO_SCENARIO, DEMO_OPTIMIZER, DEMO_DISRUPTION, DEMO_CHAT,
+  DEMO_REPORT, DEMO_SETTINGS, DEMO_SCENARIOS_LIST
+} from './demoData';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -257,29 +267,42 @@ export interface EmissionFactorItem {
   is_active: boolean;
 }
 
+// ── Helper: fetch with demo fallback ────────────────────────────────────────
+
+async function fetchWithFallback<T>(url: string, fallback: T, options?: RequestInit): Promise<T> {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch {
+    // Backend unavailable — return demo data
+    return fallback;
+  }
+}
+
 // ── API Functions ───────────────────────────────────────────────────────────
 
 export const api = {
   getKPIs: (dataset = 'demo') => 
-    fetch(`${API_BASE}/dashboard/kpis?dataset=${dataset}`).then(r => r.json()) as Promise<KPISummary>,
+    fetchWithFallback<KPISummary>(`${API_BASE}/dashboard/kpis?dataset=${dataset}`, DEMO_KPI),
 
   getMonthly: (dataset = 'demo') => 
-    fetch(`${API_BASE}/dashboard/monthly?dataset=${dataset}`).then(r => r.json()) as Promise<MonthlyEmission[]>,
+    fetchWithFallback<MonthlyEmission[]>(`${API_BASE}/dashboard/monthly?dataset=${dataset}`, DEMO_MONTHLY),
 
   getModes: (dataset = 'demo') => 
-    fetch(`${API_BASE}/dashboard/modes?dataset=${dataset}`).then(r => r.json()) as Promise<ModeBreakdown[]>,
+    fetchWithFallback<ModeBreakdown[]>(`${API_BASE}/dashboard/modes?dataset=${dataset}`, DEMO_MODES),
 
   getRoutes: (dataset = 'demo') => 
-    fetch(`${API_BASE}/emissions/routes?dataset=${dataset}`).then(r => r.json()) as Promise<RouteSummary[]>,
+    fetchWithFallback<RouteSummary[]>(`${API_BASE}/emissions/routes?dataset=${dataset}`, DEMO_ROUTES),
 
   getFactors: () => 
-    fetch(`${API_BASE}/emissions/factors`).then(r => r.json()) as Promise<EmissionFactorItem[]>,
+    fetchWithFallback<EmissionFactorItem[]>(`${API_BASE}/emissions/factors`, DEMO_FACTORS),
 
   getForecast: (dataset = 'demo', periods = 3) => 
-    fetch(`${API_BASE}/emissions/forecast?dataset=${dataset}&periods=${periods}`).then(r => r.json()),
+    fetchWithFallback(`${API_BASE}/emissions/forecast?dataset=${dataset}&periods=${periods}`, DEMO_FORECAST),
 
   getNetwork: (dataset = 'demo') => 
-    fetch(`${API_BASE}/network?dataset=${dataset}`).then(r => r.json()) as Promise<NetworkData>,
+    fetchWithFallback<NetworkData>(`${API_BASE}/network?dataset=${dataset}`, DEMO_NETWORK),
 
   getShipments: (params: { dataset?: string; page?: number; pageSize?: number; mode?: string; quality?: string; search?: string }) => {
     const q = new URLSearchParams();
@@ -289,53 +312,53 @@ export const api = {
     if (params.mode) q.set('mode', params.mode);
     if (params.quality) q.set('quality', params.quality);
     if (params.search) q.set('search', params.search);
-    return fetch(`${API_BASE}/shipments?${q.toString()}`).then(r => r.json()) as Promise<ShipmentListResponse>;
+    return fetchWithFallback<ShipmentListResponse>(`${API_BASE}/shipments?${q.toString()}`, DEMO_SHIPMENTS);
   },
 
   getScenarios: () => 
-    fetch(`${API_BASE}/scenarios`).then(r => r.json()),
+    fetchWithFallback(`${API_BASE}/scenarios`, DEMO_SCENARIOS_LIST),
 
   runScenario: (payload: { name?: string; mode_overrides?: Record<string, string>; consolidation_factor?: number; carbon_price?: number; dataset?: string }) => 
-    fetch(`${API_BASE}/scenarios/run`, {
+    fetchWithFallback<ScenarioResult>(`${API_BASE}/scenarios/run`, DEMO_SCENARIO, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).then(r => r.json()) as Promise<ScenarioResult>,
+    }),
 
   runOptimizer: (payload: { co2_reduction_target_pct?: number; max_cost_increase_pct?: number; max_time_increase_pct?: number; carbon_price?: number; available_modes?: string[]; dataset?: string }) => 
-    fetch(`${API_BASE}/optimizer/run`, {
+    fetchWithFallback<OptimizerResponse>(`${API_BASE}/optimizer/run`, DEMO_OPTIMIZER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).then(r => r.json()) as Promise<OptimizerResponse>,
+    }),
 
   runDisruption: (payload: { disruption_type: string; affected_location?: string; severity?: number; fallback_mode?: string; dataset?: string }) => 
-    fetch(`${API_BASE}/disruptions/simulate`, {
+    fetchWithFallback<DisruptionResponse>(`${API_BASE}/disruptions/simulate`, DEMO_DISRUPTION, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).then(r => r.json()) as Promise<DisruptionResponse>,
+    }),
 
   getSuppliers: () => 
-    fetch(`${API_BASE}/suppliers`).then(r => r.json()) as Promise<SupplierItem[]>,
+    fetchWithFallback<SupplierItem[]>(`${API_BASE}/suppliers`, DEMO_SUPPLIERS),
 
   getReportSummary: (dataset = 'demo') => 
-    fetch(`${API_BASE}/reports/summary?dataset=${dataset}`).then(r => r.json()),
+    fetchWithFallback(`${API_BASE}/reports/summary?dataset=${dataset}`, DEMO_REPORT),
 
   sendChatMessage: (message: string, dataset = 'demo') => 
-    fetch(`${API_BASE}/ai/chat`, {
+    fetchWithFallback<ChatResponse>(`${API_BASE}/ai/chat`, DEMO_CHAT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, dataset })
-    }).then(r => r.json()) as Promise<ChatResponse>,
+    }),
 
   getSettings: () => 
-    fetch(`${API_BASE}/settings`).then(r => r.json()),
+    fetchWithFallback(`${API_BASE}/settings`, DEMO_SETTINGS),
 
   updateSettings: (cfg: Record<string, any>) => 
-    fetch(`${API_BASE}/settings`, {
+    fetchWithFallback(`${API_BASE}/settings`, DEMO_SETTINGS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cfg)
-    }).then(r => r.json()),
+    }),
 };

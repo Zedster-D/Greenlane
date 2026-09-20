@@ -1,8 +1,15 @@
 {
   "buildCommand": "cd supply-chain-sustainability-main/greenlane-ai/frontend && npm install && npm run build",
   "outputDirectory": "supply-chain-sustainability-main/greenlane-ai/frontend/dist",
-  "framework": "vite",
+  "framework": null,
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.10",
+      "maxDuration": 30
+    }
+  }
 }

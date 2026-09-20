@@ -2,7 +2,7 @@
  * GreenLane AI — Typed API Client
  */
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export interface KPISummary {
   total_co2e_kg: number;

@@ -47,10 +47,8 @@ app = FastAPI(
 )
 
 # CORS
-origins = [
-    "https://greenlaneai.vercel.app",
-    "http://localhost:3000",  
-]
+allowed_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+origins = allowed_origins_raw.split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins, 

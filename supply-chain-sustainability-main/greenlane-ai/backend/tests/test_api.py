@@ -20,6 +20,25 @@ def test_health():
     assert response.json()["status"] == "healthy"
 
 
+def test_cors_allows_vite_and_vercel_origins():
+    response = client.options(
+        "/api/dashboard/kpis",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code in (200, 204)
+    assert "http://localhost:5173" in response.headers.get("access-control-allow-origin", "")
+
+    response = client.get(
+        "/health",
+        headers={"Origin": "https://greenlaneai.vercel.app"},
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "https://greenlaneai.vercel.app"
+
+
 def test_carbon_engine_canonical():
     # Road test: 1000 kg (1 tonne), 100 km, road factor 0.096 -> 9.6 kg CO2e
     res = calculate_co2e(weight_kg=1000, distance_km=100, mode="road")

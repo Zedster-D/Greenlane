@@ -8,6 +8,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = BASE_DIR.parent / "data"  # Original CSV data
@@ -15,11 +21,17 @@ if not DATA_DIR.exists():
     # Try the original project's data folder
     DATA_DIR = BASE_DIR.parent.parent / "data"
 
+
+def _split_origins(raw: str) -> list[str]:
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'greenlane.db'}")
 
-# CORS
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+# CORS — reads existing env names only; does not invent new variables
+_DEFAULT_CORS = "http://localhost:5173,http://localhost:3000,https://greenlaneai.vercel.app"
+CORS_ORIGINS = _split_origins(os.getenv("CORS_ORIGINS", _DEFAULT_CORS))
 
 # Carbon pricing
 DEFAULT_CARBON_PRICE = float(os.getenv("CARBON_PRICE", "50.0"))

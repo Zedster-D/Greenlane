@@ -69,8 +69,15 @@ def run_optimization(req: OptimizeRequest, db: Session = Depends(get_db)):
         for opt in result["pareto_options"]
     ]
 
+    baseline = result["baseline"]
     return OptimizeResponse(
-        baseline=result["baseline"],
+        baseline={
+            "co2e_kg": baseline["co2e_kg"],
+            "cost": baseline["cost"],
+            "time_hours": baseline["time_hours"],
+            "total_cost_with_carbon": baseline.get("total_cost_with_carbon", 0.0),
+            "carbon_cost": baseline.get("carbon_cost", 0.0),
+        },
         feasible_count=result["feasible_count"],
         infeasible_count=result["infeasible_count"],
         pareto_options=pareto_opts,
